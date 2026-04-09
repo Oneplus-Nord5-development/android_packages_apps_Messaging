@@ -20,6 +20,7 @@ package com.android.messaging.datamodel.data;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.loader.app.LoaderManager;
@@ -52,6 +53,22 @@ public class ConversationListData extends BindableData
             "(" + ConversationListViewColumns.ARCHIVE_STATUS + " = 1)";
     public static final String WHERE_NOT_ARCHIVED =
             "(" + ConversationListViewColumns.ARCHIVE_STATUS + " = 0)";
+    private static final String LIKE_ESCAPE = "\\";
+    private static final String WHERE_SEARCH_MATCHES =
+            "(" + ConversationListViewColumns.NAME + " LIKE ? ESCAPE '" + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.SNIPPET_TEXT + " LIKE ? ESCAPE '" + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.SUBJECT_TEXT + " LIKE ? ESCAPE '" + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.DRAFT_SNIPPET_TEXT + " LIKE ? ESCAPE '"
+            + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.DRAFT_SUBJECT_TEXT + " LIKE ? ESCAPE '"
+            + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.SNIPPET_SENDER_FIRST_NAME + " LIKE ? ESCAPE '"
+            + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.SNIPPET_SENDER_DISPLAY_DESTINATION
+            + " LIKE ? ESCAPE '" + LIKE_ESCAPE + "' OR "
+            + ConversationListViewColumns.OTHER_PARTICIPANT_NORMALIZED_DESTINATION
+            + " LIKE ? ESCAPE '" + LIKE_ESCAPE + "')";
+    private static final int SEARCH_MATCH_ARGUMENT_COUNT = 8;
 
     public interface ConversationListDataListener {
         void onConversationListCursorUpdated(ConversationListData data, Cursor cursor);
@@ -61,6 +78,7 @@ public class ConversationListData extends BindableData
     private ConversationListDataListener mListener;
     private final Context mContext;
     private final boolean mArchivedMode;
+    private String mSearchQuery = "";
     private LoaderManager mLoaderManager;
 
     public ConversationListData(final Context context, final ConversationListDataListener listener,
@@ -101,8 +119,8 @@ public class ConversationListData extends BindableData
                     loader = new BoundCursorLoader(bindingId, mContext,
                             MessagingContentProvider.CONVERSATIONS_URI,
                             ConversationListItemData.PROJECTION,
-                            mArchivedMode ? WHERE_ARCHIVED : WHERE_NOT_ARCHIVED,
-                            null,       // selection args
+                            getConversationSelection(),
+                            getConversationSelectionArgs(),
                             SORT_ORDER);
                     break;
                 default:
@@ -209,7 +227,46 @@ public class ConversationListData extends BindableData
         }
     }
 
+    public void setSearchQuery(final String searchQuery) {
+        final String normalizedQuery = searchQuery == null ? "" : searchQuery.trim();
+        if (TextUtils.equals(mSearchQuery, normalizedQuery)) {
+            return;
+        }
+        mSearchQuery = normalizedQuery;
+        if (mLoaderManager != null) {
+            mLoaderManager.restartLoader(CONVERSATION_LIST_LOADER, mArgs, this);
+        }
+    }
+
     public HashSet<String> getBlockedParticipants() {
         return mBlockedParticipants;
+    }
+
+    private String getConversationSelection() {
+        final String archiveSelection = mArchivedMode ? WHERE_ARCHIVED : WHERE_NOT_ARCHIVED;
+        if (TextUtils.isEmpty(mSearchQuery)) {
+            return archiveSelection;
+        }
+        return archiveSelection + " AND " + WHERE_SEARCH_MATCHES;
+    }
+
+    private String[] getConversationSelectionArgs() {
+        if (TextUtils.isEmpty(mSearchQuery)) {
+            return null;
+        }
+
+        final String likeArgument = '%' + escapeLikeArgument(mSearchQuery) + '%';
+        final String[] selectionArgs = new String[SEARCH_MATCH_ARGUMENT_COUNT];
+        for (int i = 0; i < selectionArgs.length; i++) {
+            selectionArgs[i] = likeArgument;
+        }
+        return selectionArgs;
+    }
+
+    private static String escapeLikeArgument(final String searchQuery) {
+        return searchQuery
+                .replace(LIKE_ESCAPE, LIKE_ESCAPE + LIKE_ESCAPE)
+                .replace("%", LIKE_ESCAPE + "%")
+                .replace("_", LIKE_ESCAPE + "_");
     }
 }

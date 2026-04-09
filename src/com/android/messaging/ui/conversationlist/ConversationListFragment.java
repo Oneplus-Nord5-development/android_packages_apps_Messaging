@@ -23,6 +23,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -95,7 +96,10 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     // critical for correctness.
     private static final String SAVED_INSTANCE_STATE_LIST_VIEW_STATE_KEY =
             "conversationListViewState";
+    private static final String SAVED_INSTANCE_STATE_SEARCH_QUERY_KEY =
+            "conversationListSearchQuery";
     private Parcelable mListState;
+    private String mSearchQuery = "";
 
     final Binding<ConversationListData> mListBinding = BindingBase.createBinding(this);
 
@@ -138,6 +142,9 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     }
 
     public void setScrolledToNewestConversationIfNeeded() {
+        if (mRecyclerView == null || mHost == null) {
+            return;
+        }
         if (!mArchiveMode
                 && !mForwardMessageMode
                 && isScrolledToFirstConversation()
@@ -160,6 +167,18 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         super.onDestroy();
         mListBinding.unbind();
         mHost = null;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mRecyclerView != null) {
+            mRecyclerView.setAdapter(null);
+            mRecyclerView = null;
+        }
+        mEmptyListMessageView = null;
+        mStartNewConversationButton = null;
+        mShowBlockedMenuItem = null;
     }
 
     /**
@@ -217,6 +236,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         if (savedInstanceState != null) {
             mListState = savedInstanceState.getParcelable(SAVED_INSTANCE_STATE_LIST_VIEW_STATE_KEY,
                     Parcelable.class);
+            mSearchQuery = savedInstanceState.getString(SAVED_INSTANCE_STATE_SEARCH_QUERY_KEY, "");
         }
 
         mStartNewConversationButton = rootView.findViewById(R.id.start_new_conversation_button);
@@ -248,6 +268,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
             mForwardMessageMode = arguments.getBoolean(BUNDLE_FORWARD_MESSAGE_MODE, false);
         }
         mListBinding.bind(DataModel.get().createConversationListData(context, this, mArchiveMode));
+        mListBinding.getData().setSearchQuery(mSearchQuery);
     }
 
 
@@ -257,12 +278,15 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         if (mListState != null) {
             outState.putParcelable(SAVED_INSTANCE_STATE_LIST_VIEW_STATE_KEY, mListState);
         }
+        outState.putString(SAVED_INSTANCE_STATE_SEARCH_QUERY_KEY, mSearchQuery);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
+        if (mRecyclerView != null) {
+            mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
+        }
         mListBinding.getData().setScrolledToNewestConversation(false);
     }
 
@@ -271,8 +295,10 @@ public class ConversationListFragment extends Fragment implements ConversationLi
             final Cursor cursor) {
         mListBinding.ensureBound(data);
         final Cursor oldCursor = mAdapter.swapCursor(cursor);
-        updateEmptyListUi(cursor == null || cursor.getCount() == 0);
-        if (mListState != null && cursor != null && oldCursor == null) {
+        if (mEmptyListMessageView != null) {
+            updateEmptyListUi(cursor == null || cursor.getCount() == 0);
+        }
+        if (mRecyclerView != null && mListState != null && cursor != null && oldCursor == null) {
             mRecyclerView.getLayoutManager().onRestoreInstanceState(mListState);
         }
     }
@@ -287,6 +313,23 @@ public class ConversationListFragment extends Fragment implements ConversationLi
 
     public void updateUi() {
         mAdapter.notifyDataSetChanged();
+    }
+
+    public void setSearchQuery(final String searchQuery) {
+        final String normalizedQuery = searchQuery == null ? "" : searchQuery.trim();
+        if (TextUtils.equals(mSearchQuery, normalizedQuery)) {
+            return;
+        }
+
+        mSearchQuery = normalizedQuery;
+        if (mListBinding.isBound()) {
+            mListBinding.getData().setSearchQuery(mSearchQuery);
+        }
+
+        if (mAdapter != null && mEmptyListMessageView != null) {
+            final Cursor cursor = mAdapter.getCursor();
+            updateEmptyListUi(cursor == null || cursor.getCount() == 0);
+        }
     }
 
     @Override
@@ -349,10 +392,15 @@ public class ConversationListFragment extends Fragment implements ConversationLi
 
     // Show and hide empty list UI as needed with appropriate text based on view specifics
     private void updateEmptyListUi(final boolean isEmpty) {
+        if (mEmptyListMessageView == null) {
+            return;
+        }
         if (isEmpty) {
             int emptyListText;
             if (!mListBinding.getData().getHasFirstSyncCompleted()) {
                 emptyListText = R.string.conversation_list_first_sync_text;
+            } else if (!TextUtils.isEmpty(mSearchQuery)) {
+                emptyListText = R.string.conversation_list_search_empty_text;
             } else if (mArchiveMode) {
                 emptyListText = R.string.archived_conversation_list_empty_text;
             } else {

@@ -26,6 +26,14 @@
         appcompat:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search_light"
+        android:orderInCategory="150"
+        android:title="@string/action_search"
+        appcompat:actionViewClass="androidx.appcompat.widget.SearchView"
+        appcompat:showAsAction="ifRoom|collapseActionView" />
+
+    <item
         android:id="@+id/action_show_archived"
         android:orderInCategory="200"
         android:title="@string/action_menu_show_archived"

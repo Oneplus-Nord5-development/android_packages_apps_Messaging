@@ -19,17 +19,29 @@ package com.android.messaging.ui.conversationlist;
 
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.widget.SearchView;
 
 import com.android.messaging.R;
 import com.android.messaging.ui.UIIntents;
 import com.android.messaging.util.Trace;
 
 public class ConversationListActivity extends AbstractConversationListActivity {
+    private static final String SAVED_INSTANCE_STATE_SEARCH_QUERY = "search_query";
+    private static final String SAVED_INSTANCE_STATE_SEARCH_EXPANDED = "search_expanded";
+
+    @Nullable
+    private MenuItem mSearchMenuItem;
+    @Nullable
+    private SearchView mSearchView;
+    private String mSearchQuery = "";
+    private boolean mShouldExpandSearch;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -41,8 +53,27 @@ public class ConversationListActivity extends AbstractConversationListActivity {
                 .beginTransaction()
                 .add(android.R.id.content, mConversationListFragment)
                 .commit();
+        if (savedInstanceState != null) {
+            mSearchQuery = savedInstanceState.getString(SAVED_INSTANCE_STATE_SEARCH_QUERY, "");
+            mShouldExpandSearch = savedInstanceState.getBoolean(
+                    SAVED_INSTANCE_STATE_SEARCH_EXPANDED, !TextUtils.isEmpty(mSearchQuery));
+            mConversationListFragment.setSearchQuery(mSearchQuery);
+        }
         Trace.endSection();
         invalidateActionBar();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mSearchView != null) {
+            mSearchView.setOnQueryTextListener(null);
+        }
+        if (mSearchMenuItem != null) {
+            mSearchMenuItem.setOnActionExpandListener(null);
+        }
+        mSearchView = null;
+        mSearchMenuItem = null;
+        super.onDestroy();
     }
 
     @Override
@@ -70,6 +101,8 @@ public class ConversationListActivity extends AbstractConversationListActivity {
     public void onBackPressed() {
         if (isInConversationListSelectMode()) {
             exitMultiSelectState();
+        } else if (collapseSearchIfExpanded()) {
+            return;
         } else {
             super.onBackPressed();
         }
@@ -81,7 +114,16 @@ public class ConversationListActivity extends AbstractConversationListActivity {
             return true;
         }
         getMenuInflater().inflate(R.menu.conversation_list_fragment_menu, menu);
+        configureSearch(menu);
         return true;
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull final Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(SAVED_INSTANCE_STATE_SEARCH_QUERY, mSearchQuery);
+        outState.putBoolean(SAVED_INSTANCE_STATE_SEARCH_EXPANDED,
+                mSearchMenuItem != null && mSearchMenuItem.isActionViewExpanded());
     }
 
     @Override
@@ -101,6 +143,74 @@ public class ConversationListActivity extends AbstractConversationListActivity {
             return true;
         }
         return super.onOptionsItemSelected(menuItem);
+    }
+
+    private void configureSearch(@NonNull final Menu menu) {
+        mSearchMenuItem = menu.findItem(R.id.action_search);
+        if (mSearchMenuItem == null) {
+            return;
+        }
+
+        final SearchView searchView = (SearchView) mSearchMenuItem.getActionView();
+        mSearchView = searchView;
+        searchView.setMaxWidth(Integer.MAX_VALUE);
+        searchView.setQueryHint(getString(R.string.conversation_list_search_hint));
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(final String query) {
+                updateSearchQuery(query);
+                searchView.clearFocus();
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(final String newText) {
+                updateSearchQuery(newText);
+                return true;
+            }
+        });
+        mSearchMenuItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(final MenuItem item) {
+                mShouldExpandSearch = true;
+                return true;
+            }
+
+            @Override
+            public boolean onMenuItemActionCollapse(final MenuItem item) {
+                mShouldExpandSearch = false;
+                searchView.setQuery("", false);
+                searchView.clearFocus();
+                updateSearchQuery("");
+                return true;
+            }
+        });
+
+        if (mShouldExpandSearch) {
+            mSearchMenuItem.expandActionView();
+            searchView.setQuery(mSearchQuery, false);
+            searchView.clearFocus();
+        }
+    }
+
+    private void updateSearchQuery(@Nullable final String searchQuery) {
+        final String normalizedQuery = searchQuery == null ? "" : searchQuery.trim();
+        if (TextUtils.equals(mSearchQuery, normalizedQuery)) {
+            return;
+        }
+
+        mSearchQuery = normalizedQuery;
+        if (mConversationListFragment != null) {
+            mConversationListFragment.setSearchQuery(mSearchQuery);
+        }
+    }
+
+    private boolean collapseSearchIfExpanded() {
+        if (mSearchMenuItem != null && mSearchMenuItem.isActionViewExpanded()) {
+            mSearchMenuItem.collapseActionView();
+            return true;
+        }
+        return false;
     }
 
     @Override
