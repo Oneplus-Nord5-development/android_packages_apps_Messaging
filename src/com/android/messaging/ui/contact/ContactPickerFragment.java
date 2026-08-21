@@ -543,6 +543,9 @@ public class ContactPickerFragment extends Fragment implements ContactPickerData
     }
 
     public void updateActionBar(final ActionBar actionBar) {
+        if (actionBar == null) {
+            return;
+        }
         // Hide the action bar for contact picker mode. The custom ToolBar containing chips UI
         // etc. will take the spot of the action bar.
         actionBar.hide();

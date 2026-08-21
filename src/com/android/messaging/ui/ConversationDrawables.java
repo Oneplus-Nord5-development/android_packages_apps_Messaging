@@ -98,15 +98,18 @@ public class ConversationDrawables {
                 R.drawable.fastscroll_preview_left, theme);
         mFastScrollPreviewDrawableRight = ResourcesCompat.getDrawable(resources,
                 R.drawable.fastscroll_preview_right, theme);
+        mIncomingBubbleColor = resources.getColor(R.color.message_bubble_color_incoming, theme);
         mOutgoingBubbleColor = resources.getColor(R.color.message_bubble_color_outgoing, theme);
         mIncomingErrorBubbleColor =
                 resources.getColor(R.color.message_error_bubble_color_incoming, theme);
         mIncomingAudioButtonColor =
                 resources.getColor(R.color.message_audio_button_color_incoming, theme);
         mSelectedBubbleColor = resources.getColor(R.color.message_bubble_color_selected, theme);
-        mThemeColor = resources.getColor(R.color.primary_color, theme);
+        mThemeColor = resources.getColor(R.color.action_bar_background_color, theme);
         mColors = resources.obtainTypedArray(R.array.letter_tile_colors);
     }
+
+    private int mIncomingBubbleColor;
 
     public Drawable getBubbleDrawable(final boolean selected, final boolean incoming,
                                       final boolean isError, final String identifier) {
@@ -124,13 +127,7 @@ public class ConversationDrawables {
             if (isError) {
                 color = mIncomingErrorBubbleColor;
             } else {
-                if (identifier != null &&
-                        mContext.getResources().getBoolean(R.bool.contact_colors)) {
-                    int idcolor = Math.abs(identifier.hashCode()) % mColors.length();
-                    color = mColors.getColor(idcolor, mThemeColor);
-                } else {
-                    color = mThemeColor;
-                }
+                color = mIncomingBubbleColor;
             }
         } else {
             color = mOutgoingBubbleColor;

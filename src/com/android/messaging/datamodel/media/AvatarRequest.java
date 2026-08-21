@@ -124,7 +124,7 @@ public class AvatarRequest extends UriImageRequest<AvatarRequestDescriptor> {
                 getBackgroundColor(AvatarUriUtil.getIdentifier(mDescriptor.uri)));
         final Canvas canvas = new Canvas(bitmap);
         final VectorDrawable defaultPerson = (VectorDrawable) ResourcesCompat.getDrawable(
-                mContext.getResources(), R.drawable.ic_person_light, mContext.getTheme());
+                mContext.getResources(), R.drawable.ic_person_dark, mContext.getTheme());
         float dstWidth = Math.min(defaultPerson.getIntrinsicWidth() * SCALING_FACTOR, width);
         float dstHeight = Math.min(defaultPerson.getIntrinsicHeight() * SCALING_FACTOR, height);
 

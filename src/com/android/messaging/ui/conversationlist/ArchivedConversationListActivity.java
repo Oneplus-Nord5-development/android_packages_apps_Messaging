@@ -40,14 +40,16 @@ public class ArchivedConversationListActivity extends AbstractConversationListAc
     }
 
     protected void updateActionBar(ActionBar actionBar) {
-        actionBar.setTitle(getString(R.string.archived_activity_title));
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setBackgroundDrawable(new ColorDrawable(
-                getResources().getColor(
-                        R.color.archived_conversation_action_bar_background_color_dark)));
-        actionBar.show();
-        super.updateActionBar(actionBar);
+        if (actionBar != null) {
+            actionBar.setTitle(getString(R.string.archived_activity_title));
+            actionBar.setDisplayShowTitleEnabled(true);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setBackgroundDrawable(new ColorDrawable(
+                    getResources().getColor(
+                            R.color.archived_conversation_action_bar_background_color_dark)));
+            actionBar.show();
+            super.updateActionBar(actionBar);
+        }
     }
 
     @Override

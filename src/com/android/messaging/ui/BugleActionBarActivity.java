@@ -71,8 +71,8 @@ public class BugleActionBarActivity extends AppCompatActivity implements ImeUtil
         mLastScreenHeight = getResources().getDisplayMetrics().heightPixels;
         LogUtil.v(LogUtil.BUGLE_TAG, this.getLocalClassName() + ".onCreate");
 
-        getWindow().setStatusBarColor(getResources().getColor(R.color.action_bar_background_color,
-                getTheme()));
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
     }
 
     @Override
@@ -221,7 +221,7 @@ public class BugleActionBarActivity extends AppCompatActivity implements ImeUtil
         return mActionMode;
     }
 
-    protected ActionMode.Callback getActionModeCallback() {
+    public ActionMode.Callback getActionModeCallback() {
         if (mActionMode == null) {
             return null;
         }
@@ -249,7 +249,9 @@ public class BugleActionBarActivity extends AppCompatActivity implements ImeUtil
     }
 
     protected void updateActionBar(final ActionBar actionBar) {
-        actionBar.setHomeAsUpIndicator(null);
+        if (actionBar != null) {
+            actionBar.setHomeAsUpIndicator(null);
+        }
     }
 
     /**
@@ -334,6 +336,9 @@ public class BugleActionBarActivity extends AppCompatActivity implements ImeUtil
         }
 
         public void updateActionBar(final ActionBar actionBar) {
+            if (actionBar == null) {
+                return;
+            }
             actionBar.setDisplayOptions(ActionBar.DISPLAY_HOME_AS_UP);
             actionBar.setDisplayShowTitleEnabled(false);
             actionBar.setDisplayShowCustomEnabled(false);

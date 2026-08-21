@@ -146,6 +146,14 @@ public class MultiSelectActionModeCallback implements Callback {
         }
     }
 
+    public int getSelectedCount() {
+        return mSelectedConversations.size();
+    }
+
+    public Collection<SelectedConversation> getSelectedConversations() {
+        return mSelectedConversations.values();
+    }
+
     public boolean isSelected(final String selectedId) {
         return mSelectedConversations.containsKey(selectedId);
     }

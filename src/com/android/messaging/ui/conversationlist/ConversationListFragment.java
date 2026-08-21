@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2015 The Android Open Source Project
- * Copyright (C) 2024-2025 The LineageOS Project
+ * Copyright (C) 2024-2026 The LineageOS Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,29 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.MarginLayoutParams;
 import android.view.ViewPropertyAnimator;
-import android.view.accessibility.AccessibilityManager;
 import android.widget.AbsListView;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.ViewGroupCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.loader.app.LoaderManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -56,23 +65,24 @@ import com.android.messaging.util.AccessibilityUtil;
 import com.android.messaging.util.ImeUtil;
 import com.android.messaging.util.LogUtil;
 import com.android.messaging.util.UiUtils;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
- * Shows a list of conversations.
+ * Shows a list of conversations styled like Google Messages.
  */
 public class ConversationListFragment extends Fragment implements ConversationListDataListener,
         ConversationListItemView.HostInterface {
     private static final String BUNDLE_ARCHIVED_MODE = "archived_mode";
     private static final String BUNDLE_FORWARD_MESSAGE_MODE = "forward_message_mode";
 
-    private MenuItem mShowBlockedMenuItem;
     private boolean mArchiveMode;
     private boolean mBlockedAvailable;
     private boolean mForwardMessageMode;
+    private boolean mIsSearchOpen;
 
     public interface ConversationListFragmentHost {
         void onConversationClick(final ConversationListData listData,
@@ -88,12 +98,30 @@ public class ConversationListFragment extends Fragment implements ConversationLi
 
     private ConversationListFragmentHost mHost;
     private RecyclerView mRecyclerView;
-    private ExtendedFloatingActionButton mStartNewConversationButton;
+    private FloatingActionButton mStartNewConversationButton;
     private ListEmptyView mEmptyListMessageView;
     private ConversationListAdapter mAdapter;
 
-    // Saved Instance State Data - only for temporal data which is nice to maintain but not
-    // critical for correctness.
+    // Google Messages Top Header Views
+    private FrameLayout mHeaderContainer;
+    private LinearLayout mNormalHeader;
+    private TextView mAppTitleText;
+    private ImageView mSearchIconButton;
+    private ImageView mOptionsIconButton;
+
+    private LinearLayout mSearchHeader;
+    private ImageView mSearchBackButton;
+    private EditText mSearchInputView;
+    private ImageView mSearchClearButton;
+
+    private LinearLayout mSelectionHeader;
+    private ImageView mSelectionCloseButton;
+    private TextView mSelectionCountText;
+    private ImageView mSelectionArchiveButton;
+    private ImageView mSelectionDeleteButton;
+    private ImageView mSelectionBlockButton;
+
+    // Saved Instance State Data
     private static final String SAVED_INSTANCE_STATE_LIST_VIEW_STATE_KEY =
             "conversationListViewState";
     private static final String SAVED_INSTANCE_STATE_SEARCH_QUERY_KEY =
@@ -121,9 +149,6 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         return fragment;
     }
 
-    /**
-     * {@inheritDoc} from Fragment
-     */
     @Override
     public void onCreate(final Bundle bundle) {
         super.onCreate(bundle);
@@ -134,10 +159,8 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public void onResume() {
         super.onResume();
-
         mHost = (ConversationListFragmentHost) getActivity();
         setScrolledToNewestConversationIfNeeded();
-
         updateUi();
     }
 
@@ -154,14 +177,14 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     }
 
     private boolean isScrolledToFirstConversation() {
+        if (mRecyclerView == null || mRecyclerView.getLayoutManager() == null) {
+            return false;
+        }
         int firstItemPosition = ((LinearLayoutManager) mRecyclerView.getLayoutManager())
                 .findFirstCompletelyVisibleItemPosition();
         return firstItemPosition == 0;
     }
 
-    /**
-     * {@inheritDoc} from Fragment
-     */
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -178,24 +201,76 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         }
         mEmptyListMessageView = null;
         mStartNewConversationButton = null;
-        mShowBlockedMenuItem = null;
+        mHeaderContainer = null;
+        mNormalHeader = null;
+        mSearchHeader = null;
+        mSelectionHeader = null;
+        mSearchInputView = null;
     }
 
-    /**
-     * {@inheritDoc} from Fragment
-     */
     @Override
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
             final Bundle savedInstanceState) {
         final ViewGroup rootView = (ViewGroup) inflater.inflate(R.layout.conversation_list_fragment,
                 container, false);
+
+        mHeaderContainer = rootView.findViewById(R.id.header_container);
+        mNormalHeader = rootView.findViewById(R.id.normal_header);
+        mAppTitleText = rootView.findViewById(R.id.app_title_text);
+        mSearchIconButton = rootView.findViewById(R.id.search_icon_button);
+        mOptionsIconButton = rootView.findViewById(R.id.options_icon_button);
+
+        mSearchHeader = rootView.findViewById(R.id.search_header);
+        mSearchBackButton = rootView.findViewById(R.id.search_back_button);
+        mSearchInputView = rootView.findViewById(R.id.search_input_view);
+        mSearchClearButton = rootView.findViewById(R.id.search_clear_button);
+
+        mSelectionHeader = rootView.findViewById(R.id.selection_header);
+        mSelectionCloseButton = rootView.findViewById(R.id.selection_close_button);
+        mSelectionCountText = rootView.findViewById(R.id.selection_count_text);
+        mSelectionArchiveButton = rootView.findViewById(R.id.selection_archive_button);
+        mSelectionDeleteButton = rootView.findViewById(R.id.selection_delete_button);
+        mSelectionBlockButton = rootView.findViewById(R.id.selection_block_button);
+
         mRecyclerView = rootView.findViewById(android.R.id.list);
         mEmptyListMessageView = rootView.findViewById(R.id.no_conversations_view);
         mEmptyListMessageView.setImageHint(R.drawable.ic_oobe_conv_list);
-        // The default behavior for default layout param generation by LinearLayoutManager is to
-        // provide width and height of WRAP_CONTENT, but this is not desirable for
-        // ConversationListFragment; the view in each row should be a width of MATCH_PARENT so that
-        // the entire row is tappable.
+
+        // Apply Android 16 Edge-to-Edge Window Insets
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (view, insets) -> {
+            Insets statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            Insets navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            if (mHeaderContainer != null) {
+                mHeaderContainer.setPadding(0, statusBarInsets.top, 0, 0);
+            }
+
+            if (mRecyclerView != null) {
+                int bottomPadding = navBarInsets.bottom + (int) (88 * getResources().getDisplayMetrics().density);
+                mRecyclerView.setPadding(0, 0, 0, bottomPadding);
+            }
+
+            if (mStartNewConversationButton != null) {
+                MarginLayoutParams lp = (MarginLayoutParams) mStartNewConversationButton.getLayoutParams();
+                lp.bottomMargin = navBarInsets.bottom + (int) (16 * getResources().getDisplayMetrics().density);
+                mStartNewConversationButton.setLayoutParams(lp);
+            }
+
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // Set title for archived mode
+        if (mArchiveMode) {
+            mAppTitleText.setText(R.string.archived_activity_title);
+            if (mSelectionArchiveButton != null) {
+                mSelectionArchiveButton.setImageResource(R.drawable.ic_archive_undo_small_dark);
+                mSelectionArchiveButton.setContentDescription(getString(R.string.action_unarchive));
+            }
+        }
+
+        setupHeaders();
+
         final Activity activity = getActivity();
         final LinearLayoutManager manager = new LinearLayoutManager(activity) {
             @Override
@@ -207,6 +282,8 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         mRecyclerView.setLayoutManager(manager);
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setAdapter(mAdapter);
+
+        // Scroll listener for Ime hide and FAB shrink/extend
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             int mCurrentState = AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 
@@ -248,14 +325,142 @@ public class ConversationListFragment extends Fragment implements ConversationLi
                     mHost.onCreateConversationClick());
         }
 
-        // The root view has a non-null background, which by default is deemed by the framework
-        // to be a "transition group," where all child views are animated together during an
-        // activity transition. However, we want each individual items in the recycler view to
-        // show explode animation themselves, so we explicitly tag the root view to be a non-group.
         ViewGroupCompat.setTransitionGroup(rootView, false);
-
-        setHasOptionsMenu(true);
         return rootView;
+    }
+
+    private void setupHeaders() {
+        // Search Button click -> show search header
+        mSearchIconButton.setOnClickListener(v -> openSearch());
+
+        // Options Button click -> show PopupMenu (Archived, Blocked, Settings)
+        mOptionsIconButton.setOnClickListener(v -> showOptionsMenu(v));
+
+        // Search Back button click -> close search
+        mSearchBackButton.setOnClickListener(v -> closeSearch());
+
+        // Search input text change listener
+        mSearchInputView.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                final String query = s == null ? "" : s.toString();
+                mSearchClearButton.setVisibility(TextUtils.isEmpty(query) ? View.GONE : View.VISIBLE);
+                setSearchQuery(query);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Search Clear button click
+        mSearchClearButton.setOnClickListener(v -> {
+            mSearchInputView.setText("");
+            setSearchQuery("");
+        });
+
+        // Selection Header Actions
+        mSelectionCloseButton.setOnClickListener(v -> {
+            if (getActivity() instanceof AbstractConversationListActivity) {
+                ((AbstractConversationListActivity) getActivity()).onActionBarHome();
+            }
+        });
+
+        mSelectionArchiveButton.setOnClickListener(v -> {
+            if (getActivity() instanceof AbstractConversationListActivity) {
+                final AbstractConversationListActivity act = (AbstractConversationListActivity) getActivity();
+                if (act.getActionModeCallback() instanceof MultiSelectActionModeCallback) {
+                    final MultiSelectActionModeCallback cb = (MultiSelectActionModeCallback) act.getActionModeCallback();
+                    act.onActionBarArchive(cb.getSelectedConversations(), !mArchiveMode);
+                }
+            }
+        });
+
+        mSelectionDeleteButton.setOnClickListener(v -> {
+            if (getActivity() instanceof AbstractConversationListActivity) {
+                final AbstractConversationListActivity act = (AbstractConversationListActivity) getActivity();
+                if (act.getActionModeCallback() instanceof MultiSelectActionModeCallback) {
+                    final MultiSelectActionModeCallback cb = (MultiSelectActionModeCallback) act.getActionModeCallback();
+                    act.onActionBarDelete(cb.getSelectedConversations());
+                }
+            }
+        });
+
+        mSelectionBlockButton.setOnClickListener(v -> {
+            if (getActivity() instanceof AbstractConversationListActivity) {
+                final AbstractConversationListActivity act = (AbstractConversationListActivity) getActivity();
+                if (act.getActionModeCallback() instanceof MultiSelectActionModeCallback) {
+                    final MultiSelectActionModeCallback cb = (MultiSelectActionModeCallback) act.getActionModeCallback();
+                    final Collection<MultiSelectActionModeCallback.SelectedConversation> selected = cb.getSelectedConversations();
+                    if (!selected.isEmpty()) {
+                        act.onActionBarBlock(selected.iterator().next());
+                    }
+                }
+            }
+        });
+    }
+
+    private void openSearch() {
+        mIsSearchOpen = true;
+        mNormalHeader.setVisibility(View.GONE);
+        mSelectionHeader.setVisibility(View.GONE);
+        mSearchHeader.setVisibility(View.VISIBLE);
+        mSearchInputView.requestFocus();
+        ImeUtil.get().showImeKeyboard(getActivity(), mSearchInputView);
+    }
+
+    private void closeSearch() {
+        mIsSearchOpen = false;
+        mSearchInputView.setText("");
+        setSearchQuery("");
+        ImeUtil.get().hideImeKeyboard(getActivity(), mSearchInputView);
+        mSearchHeader.setVisibility(View.GONE);
+        mNormalHeader.setVisibility(View.VISIBLE);
+    }
+
+    public boolean onBackPressed() {
+        if (mIsSearchOpen) {
+            closeSearch();
+            return true;
+        }
+        return false;
+    }
+
+    private void showOptionsMenu(View anchor) {
+        final PopupMenu popup = new PopupMenu(requireContext(), anchor);
+        popup.getMenuInflater().inflate(R.menu.conversation_list_fragment_menu, popup.getMenu());
+
+        final MenuItem blockedItem = popup.getMenu().findItem(R.id.action_show_blocked_contacts);
+        if (blockedItem != null) {
+            blockedItem.setVisible(mBlockedAvailable);
+        }
+
+        final MenuItem archiveItem = popup.getMenu().findItem(R.id.action_show_archived);
+        if (archiveItem != null) {
+            archiveItem.setVisible(!mArchiveMode);
+        }
+
+        popup.setOnMenuItemClickListener(item -> {
+            final int id = item.getItemId();
+            final Activity activity = getActivity();
+            if (activity instanceof ConversationListActivity) {
+                final ConversationListActivity mainAct = (ConversationListActivity) activity;
+                if (id == R.id.action_settings) {
+                    mainAct.onActionBarSettings();
+                    return true;
+                } else if (id == R.id.action_show_archived) {
+                    mainAct.onActionBarArchived();
+                    return true;
+                } else if (id == R.id.action_show_blocked_contacts) {
+                    mainAct.onActionBarBlockedParticipants();
+                    return true;
+                }
+            }
+            return false;
+        });
+        popup.show();
     }
 
     @Override
@@ -271,7 +476,6 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         mListBinding.getData().setSearchQuery(mSearchQuery);
     }
 
-
     @Override
     public void onSaveInstanceState(@NonNull final Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -284,7 +488,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public void onPause() {
         super.onPause();
-        if (mRecyclerView != null) {
+        if (mRecyclerView != null && mRecyclerView.getLayoutManager() != null) {
             mListState = mRecyclerView.getLayoutManager().onSaveInstanceState();
         }
         mListBinding.getData().setScrolledToNewestConversation(false);
@@ -298,7 +502,8 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         if (mEmptyListMessageView != null) {
             updateEmptyListUi(cursor == null || cursor.getCount() == 0);
         }
-        if (mRecyclerView != null && mListState != null && cursor != null && oldCursor == null) {
+        if (mRecyclerView != null && mListState != null && cursor != null && oldCursor == null
+                && mRecyclerView.getLayoutManager() != null) {
             mRecyclerView.getLayoutManager().onRestoreInstanceState(mListState);
         }
     }
@@ -306,13 +511,51 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public void setBlockedParticipantsAvailable(final boolean blockedAvailable) {
         mBlockedAvailable = blockedAvailable;
-        if (mShowBlockedMenuItem != null) {
-            mShowBlockedMenuItem.setVisible(blockedAvailable);
-        }
     }
 
     public void updateUi() {
-        mAdapter.notifyDataSetChanged();
+        if (mAdapter != null) {
+            mAdapter.notifyDataSetChanged();
+        }
+        updateHeaderMode();
+    }
+
+    private void updateHeaderMode() {
+        if (mHost != null && mHost.isSelectionMode()) {
+            if (mNormalHeader != null) mNormalHeader.setVisibility(View.GONE);
+            if (mSearchHeader != null) mSearchHeader.setVisibility(View.GONE);
+            if (mSelectionHeader != null) {
+                mSelectionHeader.setVisibility(View.VISIBLE);
+                if (getActivity() instanceof AbstractConversationListActivity) {
+                    final AbstractConversationListActivity act = (AbstractConversationListActivity) getActivity();
+                    if (act.getActionModeCallback() instanceof MultiSelectActionModeCallback) {
+                        final MultiSelectActionModeCallback cb = (MultiSelectActionModeCallback) act.getActionModeCallback();
+                        int count = cb.getSelectedCount();
+                        mSelectionCountText.setText(String.valueOf(count));
+                        if (mSelectionBlockButton != null) {
+                            mSelectionBlockButton.setVisibility(count == 1 ? View.VISIBLE : View.GONE);
+                        }
+                    }
+                }
+            }
+            if (mStartNewConversationButton != null) {
+                mStartNewConversationButton.setVisibility(View.GONE);
+            }
+        } else if (mIsSearchOpen) {
+            if (mNormalHeader != null) mNormalHeader.setVisibility(View.GONE);
+            if (mSelectionHeader != null) mSelectionHeader.setVisibility(View.GONE);
+            if (mSearchHeader != null) mSearchHeader.setVisibility(View.VISIBLE);
+            if (mStartNewConversationButton != null && !mArchiveMode && !mForwardMessageMode) {
+                mStartNewConversationButton.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (mSelectionHeader != null) mSelectionHeader.setVisibility(View.GONE);
+            if (mSearchHeader != null) mSearchHeader.setVisibility(View.GONE);
+            if (mNormalHeader != null) mNormalHeader.setVisibility(View.VISIBLE);
+            if (mStartNewConversationButton != null && !mArchiveMode && !mForwardMessageMode) {
+                mStartNewConversationButton.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     public void setSearchQuery(final String searchQuery) {
@@ -333,43 +576,6 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     }
 
     @Override
-    public void onPrepareOptionsMenu(@NonNull final Menu menu) {
-        super.onPrepareOptionsMenu(menu);
-        final MenuItem startNewConversationMenuItem =
-                menu.findItem(R.id.action_start_new_conversation);
-        if (startNewConversationMenuItem != null) {
-            // It is recommended for the Floating Action button functionality to be duplicated as a
-            // menu
-            AccessibilityManager accessibilityManager = (AccessibilityManager)
-                    requireActivity().getSystemService(Context.ACCESSIBILITY_SERVICE);
-            startNewConversationMenuItem.setVisible(accessibilityManager
-                    .isTouchExplorationEnabled());
-        }
-
-        final MenuItem archive = menu.findItem(R.id.action_show_archived);
-        if (archive != null) {
-            archive.setVisible(true);
-        }
-    }
-
-    @Override
-    public void onCreateOptionsMenu(@NonNull final Menu menu,
-                                    @NonNull final MenuInflater inflater) {
-        if (!isAdded()) {
-            // Guard against being called before we're added to the activity
-            return;
-        }
-
-        mShowBlockedMenuItem = menu.findItem(R.id.action_show_blocked_contacts);
-        if (mShowBlockedMenuItem != null) {
-            mShowBlockedMenuItem.setVisible(mBlockedAvailable);
-        }
-    }
-
-    /**
-     * {@inheritDoc} from ConversationListItemView.HostInterface
-     */
-    @Override
     public void onConversationClicked(final ConversationListItemData conversationListItemData,
             final boolean isLongClick, final ConversationListItemView conversationView) {
         final ConversationListData listData = mListBinding.getData();
@@ -377,20 +583,16 @@ public class ConversationListFragment extends Fragment implements ConversationLi
                 conversationView);
     }
 
-    /**
-     * {@inheritDoc} from ConversationListItemView.HostInterface
-     */
     @Override
     public boolean isConversationSelected(final String conversationId) {
-        return mHost.isConversationSelected(conversationId);
+        return mHost != null && mHost.isConversationSelected(conversationId);
     }
 
     @Override
     public boolean isSwipeAnimatable() {
-        return mHost.isSwipeAnimatable();
+        return mHost != null && mHost.isSwipeAnimatable();
     }
 
-    // Show and hide empty list UI as needed with appropriate text based on view specifics
     private void updateEmptyListUi(final boolean isEmpty) {
         if (mEmptyListMessageView == null) {
             return;
@@ -418,9 +620,11 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public List<SnackBarInteraction> getSnackBarInteractions() {
         final List<SnackBarInteraction> interactions = new ArrayList<>(1);
-        final SnackBarInteraction fabInteraction =
-                new SnackBarInteraction.BasicSnackBarInteraction(mStartNewConversationButton);
-        interactions.add(fabInteraction);
+        if (mStartNewConversationButton != null) {
+            final SnackBarInteraction fabInteraction =
+                    new SnackBarInteraction.BasicSnackBarInteraction(mStartNewConversationButton);
+            interactions.add(fabInteraction);
+        }
         return interactions;
     }
 
@@ -432,7 +636,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     }
 
     public void dismissFab() {
-        // To prevent clicking while animating.
+        if (mStartNewConversationButton == null) return;
         mStartNewConversationButton.setEnabled(false);
         final MarginLayoutParams lp =
                 (MarginLayoutParams) mStartNewConversationButton.getLayoutParams();
@@ -443,9 +647,11 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     }
 
     public void showFab() {
+        if (mStartNewConversationButton == null) return;
         getNormalizedFabAnimator().translationX(0).withEndAction(() -> {
-            // Re-enable clicks after the animation.
-            mStartNewConversationButton.setEnabled(true);
+            if (mStartNewConversationButton != null) {
+                mStartNewConversationButton.setEnabled(true);
+            }
         });
     }
 

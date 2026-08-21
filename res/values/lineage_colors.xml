@@ -24,7 +24,8 @@
 
     <color name="compose_send_text_background_color">@android:color/white</color>
 
-    <color name="fab_fg_color">@android:color/white</color>
+    <color name="fab_fg_color">#FFE085</color>
+    <color name="fab_color">#634000</color>
 
     <color name="attachment_bg_color">@android:color/system_neutral1_0</color>
 </resources>

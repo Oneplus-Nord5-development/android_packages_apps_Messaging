@@ -38,20 +38,25 @@
         <item name="preferenceTheme">@style/AppPreferenceThemeOverlay</item>
     </style>
 
-    <style name="LaunchTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-         <item name="colorPrimary">@color/action_bar_background_color</item>
-         <item name="colorPrimaryDark">@color/action_bar_background_color_dark</item>
+    <style name="LaunchTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+         <item name="android:windowBackground">@color/google_messages_bg</item>
+         <item name="android:statusBarColor">@android:color/transparent</item>
+         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
     <style name="BugleTheme.ConversationActivity"
         parent="@style/BugleTheme.ConversationActivityBase">
         <item name="android:colorEdgeEffect">@color/conversation_edge_effect</item>
+        <item name="android:windowBackground">@color/google_messages_bg</item>
+        <item name="android:colorBackground">@color/google_messages_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
     <style name="BugleTheme.ConversationActivityBase" parent="BugleTheme">
-        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:windowBackground">@color/google_messages_bg</item>
         <item name="windowActionBarOverlay">true</item>
-        <item name="colorAccent">@color/lineage_accent</item>
+        <item name="colorAccent">@color/google_messages_link_color</item>
         <item name="android:fastScrollPreviewBackgroundLeft">@drawable/contacts_fastscroll_label_left</item>
         <item name="android:fastScrollPreviewBackgroundRight">@drawable/contacts_fastscroll_label_right</item>
     </style>
@@ -62,8 +67,15 @@
         <item name="android:dialogCornerRadius">28dp</item>
     </style>
 
-    <style name="BugleTheme.ConversationListActivity" parent="BugleTheme">
-        <item name="android:windowBackground">@color/window_background</item>
+    <style name="BugleTheme.ConversationListActivity" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/google_messages_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:colorBackground">@color/google_messages_bg</item>
+        <item name="colorPrimary">@color/google_messages_fab_bg</item>
+        <item name="colorAccent">@color/lineage_accent</item>
+        <item name="alertDialogTheme">@style/AlertDialogTheme</item>
+        <item name="preferenceTheme">@style/AppPreferenceThemeOverlay</item>
     </style>
 
     <style name="BugleTheme.ArchivedConversationListActivity" parent="BugleTheme.ConversationListActivity">
@@ -93,7 +105,8 @@
 
     <style name="BugleActionBarTitleTextStyle" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
       <item name="android:textColor">@color/action_bar_title_text_color</item>
-      <item name="android:textSize">@dimen/action_bar_text_size</item>
+      <item name="android:textSize">18sp</item>
+      <item name="android:fontFamily">sans-serif-medium</item>
       <item name="android:lines">1</item>
       <item name="android:textAlignment">viewStart</item>
     </style>
@@ -594,7 +607,7 @@
 
     <style name="ShapeAppearanceOverlay" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">24dp</item>
     </style>
 
 </resources>

@@ -19,53 +19,65 @@
     <color name="primary_color">@android:color/system_accent1_600</color>
     <color name="permission_check_activity_background">@color/primary_color</color>
 
-    <!--  Action bar -->
-    <color name="action_bar_title_text_color">@android:color/system_neutral1_0</color>
-    <color name="action_bar_background_color">@android:color/system_accent1_600</color>
-    <color name="action_bar_background_color_dark">@android:color/system_accent1_700</color>
-    <color name="contextual_action_bar_background_color">@android:color/system_accent1_600</color>
-    <color name="archived_conversation_action_bar_background_color">@android:color/system_accent1_700</color>
-    <color name="archived_conversation_action_bar_background_color_dark">@android:color/system_accent1_600</color>
+    <!--  Action bar and System Surfaces -->
+    <color name="action_bar_title_text_color">#FFFFFF</color>
+    <color name="action_bar_background_color">#000000</color>
+    <color name="action_bar_background_color_dark">#000000</color>
+    <color name="contextual_action_bar_background_color">#1E1E1E</color>
+    <color name="archived_conversation_action_bar_background_color">#1E1E1E</color>
+    <color name="archived_conversation_action_bar_background_color_dark">#1E1E1E</color>
+
+    <!-- Google Messages Design Tokens -->
+    <color name="google_messages_bg">#000000</color>
+    <color name="google_messages_surface">#000000</color>
+    <color name="google_messages_surface_container">#161616</color>
+    <color name="google_messages_surface_container_high">#242424</color>
+    <color name="google_messages_title_color">#FFFFFF</color>
+    <color name="google_messages_link_color">#8AB4F8</color>
+    <color name="google_messages_text_secondary">#9AA0A6</color>
+    <color name="google_messages_fab_bg">#634000</color>
+    <color name="google_messages_fab_text">#FFE085</color>
 
     <!-- Conversation list -->
-    <color name="conversation_list_item_read">#636363</color>
-    <color name="conversation_list_item_unread">#323232</color>
+    <color name="conversation_list_item_read">#9AA0A6</color>
+    <color name="conversation_list_item_unread">#FFFFFF</color>
     <color name="conversation_list_error">#F05A24</color>
-    <color name="conversation_list_name">#DE000000</color>
-    <color name="conversation_list_details">#8A000000</color>
+    <color name="conversation_list_name">#FFFFFF</color>
+    <color name="conversation_list_details">#9AA0A6</color>
 
     <color name="conversation_compose_divider_start">#44000000</color>
 
-    <color name="message_text">#000000</color>
-    <color name="timestamp_text_outgoing">#99323232</color>
-    <color name="timestamp_text_incoming">#99ffffff</color>
-    <color name="timestamp_text_failed">#99ff0000</color>
-    <color name="compose_send_text_color">#000000</color>
+    <color name="message_text">#FFFFFF</color>
+    <color name="timestamp_text_outgoing">#D3E3FD</color>
+    <color name="timestamp_text_incoming">#9AA0A6</color>
+    <color name="timestamp_text_failed">#F28B82</color>
+    <color name="compose_send_text_color">#FFFFFF</color>
 
-    <color name="message_title_text">#ff323232</color>
-    <color name="message_download_failed_status_text">#000000</color>
-    <color name="message_info_text">#99ffffff</color>
-    <color name="message_info_text_incoming_download_failed">#6a6a6a</color>
-    <color name="message_download_failed_timestamp_text">#007fce</color>
-    <color name="message_failed_timestamp_text">#99ff0000</color>
-    <color name="message_action_status_text">#ffffffff</color>
-    <color name="message_action_info_text">#99ffffff</color>
-    <color name="message_action_timestamp_text">#ffffffff</color>
+    <color name="message_title_text">#FFFFFF</color>
+    <color name="message_download_failed_status_text">#F28B82</color>
+    <color name="message_info_text">#9AA0A6</color>
+    <color name="message_info_text_incoming_download_failed">#F28B82</color>
+    <color name="message_download_failed_timestamp_text">#8AB4F8</color>
+    <color name="message_failed_timestamp_text">#F28B82</color>
+    <color name="message_action_status_text">#FFFFFF</color>
+    <color name="message_action_info_text">#9AA0A6</color>
+    <color name="message_action_timestamp_text">#FFFFFF</color>
 
-    <color name="background_item_pressed">#6733b5e5</color>
+    <color name="background_item_pressed">#33FFFFFF</color>
 
-    <color name="subject_editor_bubble">#ffffffff</color>
-    <color name="message_text_color_incoming">#ffffffff</color>
-    <color name="message_text_color_incoming_download_failed">#6a6a6a</color>
-    <color name="message_text_color_outgoing">#ff323232</color>
-    <color name="conversation_background">@color/window_background</color>
-    <color name="conversation_edge_effect">#9d9d9d</color>
-    <color name="compose_message_send_color">@color/lineage_accent</color>
-    <color name="compose_message_send_color_pressed">#999999</color>
-    <color name="message_bubble_color_outgoing">#ffffffff</color>
-    <color name="message_error_bubble_color_incoming">#e2e2e2</color>
-    <color name="message_audio_button_color_incoming">#ffffffff</color>
-    <color name="message_bubble_color_selected">@android:color/system_accent3_300</color>
+    <color name="subject_editor_bubble">#242424</color>
+    <color name="message_text_color_incoming">#FFFFFF</color>
+    <color name="message_text_color_incoming_download_failed">#9AA0A6</color>
+    <color name="message_text_color_outgoing">#FFFFFF</color>
+    <color name="conversation_background">#000000</color>
+    <color name="conversation_edge_effect">#3C4043</color>
+    <color name="compose_message_send_color">@color/google_messages_fab_bg</color>
+    <color name="compose_message_send_color_pressed">#7B4E00</color>
+    <color name="message_bubble_color_incoming">#202124</color>
+    <color name="message_bubble_color_outgoing">#0B57D0</color>
+    <color name="message_error_bubble_color_incoming">#601410</color>
+    <color name="message_audio_button_color_incoming">#FFFFFF</color>
+    <color name="message_bubble_color_selected">#004A77</color>
     <color name="message_image_selected_tint">#7f040000</color>
 
     <!-- Base color used for color filtering. -->
@@ -92,18 +104,18 @@
     <color name="attachment_preview_more_items_text_background">#44000000</color>
 
     <array name="letter_tile_colors">
-        <item>@android:color/system_accent1_300</item>
-        <item>@android:color/system_accent2_300</item>
-        <item>@android:color/system_accent3_300</item>
-        <item>@android:color/system_accent1_400</item>
-        <item>@android:color/system_accent2_400</item>
-        <item>@android:color/system_accent3_400</item>
-        <item>@android:color/system_accent1_500</item>
-        <item>@android:color/system_accent2_500</item>
-        <item>@android:color/system_accent3_500</item>
-        <item>@android:color/system_accent1_600</item>
-        <item>@android:color/system_accent2_600</item>
-        <item>@android:color/system_accent3_600</item>
+        <item>#34A853</item> <!-- Google Green -->
+        <item>#1A73E8</item> <!-- Google Blue -->
+        <item>#E91E63</item> <!-- Google Pink -->
+        <item>#9C27B0</item> <!-- Google Purple -->
+        <item>#E8710A</item> <!-- Google Orange -->
+        <item>#00897B</item> <!-- Google Teal -->
+        <item>#D93025</item> <!-- Google Red -->
+        <item>#673AB7</item> <!-- Deep Purple -->
+        <item>#0097A7</item> <!-- Cyan -->
+        <item>#F4511E</item> <!-- Deep Orange -->
+        <item>#3949AB</item> <!-- Indigo -->
+        <item>#43A047</item> <!-- Green 600 -->
     </array>
 
     <color name="letter_tile_font_color">#ffffff</color>

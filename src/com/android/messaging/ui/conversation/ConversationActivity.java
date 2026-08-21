@@ -64,6 +64,7 @@ public class ConversationActivity extends BugleActionBarActivity
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         setContentView(R.layout.conversation_activity);
 

@@ -164,11 +164,11 @@ public class ConversationListItemView extends FrameLayout implements OnClickList
 
         final Resources resources = getContext().getResources();
         final Resources.Theme theme = getContext().getTheme();
-        mListItemReadColor = resources.getColor(R.color.conversation_list_item_read, theme);
-        mListItemUnreadColor = resources.getColor(R.color.conversation_list_item_unread, theme);
+        mListItemReadColor = resources.getColor(R.color.google_messages_text_secondary, theme);
+        mListItemUnreadColor = resources.getColor(R.color.google_messages_title_color, theme);
 
-        mListItemReadTypeface = Typefaces.getRobotoNormal();
-        mListItemUnreadTypeface = Typefaces.getRobotoBold();
+        mListItemReadTypeface = Typeface.create("sans-serif", Typeface.NORMAL);
+        mListItemUnreadTypeface = Typeface.create("sans-serif-medium", Typeface.NORMAL);
 
         setTransitionGroup(true);
     }
@@ -191,11 +191,10 @@ public class ConversationListItemView extends FrameLayout implements OnClickList
     }
 
     private void setConversationName() {
+        mConversationNameView.setTextColor(getResources().getColor(R.color.google_messages_title_color, getContext().getTheme()));
         if (mData.getIsRead() || mData.getShowDraft()) {
-            mConversationNameView.setTextColor(mListItemReadColor);
             mConversationNameView.setTypeface(mListItemReadTypeface);
         } else {
-            mConversationNameView.setTextColor(mListItemUnreadColor);
             mConversationNameView.setTypeface(mListItemUnreadTypeface);
         }
 

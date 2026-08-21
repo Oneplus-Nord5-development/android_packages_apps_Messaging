@@ -166,22 +166,27 @@ public class ConversationMessageView extends FrameLayout implements View.OnClick
         final int unspecifiedMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         final int iconMeasureSpec = MeasureSpec.makeMeasureSpec(iconSize, MeasureSpec.EXACTLY);
 
-        mContactIconView.measure(iconMeasureSpec, iconMeasureSpec);
+        final boolean showAvatar = !mOneOnOne && !shouldShowSimplifiedVisualStyle();
+        if (showAvatar) {
+            mContactIconView.measure(iconMeasureSpec, iconMeasureSpec);
+        } else {
+            mContactIconView.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.EXACTLY));
+        }
 
         final int arrowWidth =
                 getResources().getDimensionPixelSize(R.dimen.message_bubble_arrow_width);
 
-        // We need to subtract contact icon width twice from the horizontal space to get
-        // the max leftover space because we want the message bubble to extend no further than the
-        // starting position of the message bubble in the opposite direction.
-        final int maxLeftoverSpace = horizontalSpace - mContactIconView.getMeasuredWidth() * 2
+        final int iconWidth = showAvatar ? mContactIconView.getMeasuredWidth() : 0;
+        final int maxLeftoverSpace = horizontalSpace
+                - (showAvatar ? (iconWidth * 2) : (int) (48 * getResources().getDisplayMetrics().density))
                 - arrowWidth - getPaddingStart() - getPaddingEnd();
         final int messageContentWidthMeasureSpec = MeasureSpec.makeMeasureSpec(maxLeftoverSpace,
                 MeasureSpec.AT_MOST);
 
         mMessageBubble.measure(messageContentWidthMeasureSpec, unspecifiedMeasureSpec);
 
-        final int maxHeight = Math.max(mContactIconView.getMeasuredHeight(),
+        final int maxHeight = Math.max(showAvatar ? mContactIconView.getMeasuredHeight() : 0,
                 mMessageBubble.getMeasuredHeight());
         setMeasuredDimension(horizontalSpace, maxHeight + getPaddingBottom() + getPaddingTop());
     }
@@ -191,10 +196,11 @@ public class ConversationMessageView extends FrameLayout implements View.OnClick
             final int bottom) {
         final boolean isRtl = AccessibilityUtil.isLayoutRtl(this);
 
-        final int iconWidth = mContactIconView.getMeasuredWidth();
-        final int iconHeight = mContactIconView.getMeasuredHeight();
+        final boolean showAvatar = !mOneOnOne && !shouldShowSimplifiedVisualStyle();
+        final int iconWidth = showAvatar ? mContactIconView.getMeasuredWidth() : 0;
+        final int iconHeight = showAvatar ? mContactIconView.getMeasuredHeight() : 0;
         final int iconTop = getPaddingTop();
-        final int contentWidth = (right -left) - iconWidth - getPaddingStart() - getPaddingEnd();
+        final int contentWidth = (right - left) - iconWidth - getPaddingStart() - getPaddingEnd();
         final int contentHeight = mMessageBubble.getMeasuredHeight();
         final int contentTop = iconTop;
 
@@ -218,7 +224,11 @@ public class ConversationMessageView extends FrameLayout implements View.OnClick
             }
         }
 
-        mContactIconView.layout(iconLeft, iconTop, iconLeft + iconWidth, iconTop + iconHeight);
+        if (showAvatar) {
+            mContactIconView.layout(iconLeft, iconTop, iconLeft + iconWidth, iconTop + iconHeight);
+        } else {
+            mContactIconView.layout(0, 0, 0, 0);
+        }
 
         mMessageBubble.layout(contentLeft, contentTop, contentLeft + contentWidth,
                 contentTop + contentHeight);
@@ -458,7 +468,7 @@ public class ConversationMessageView extends FrameLayout implements View.OnClick
         mMessageTextAndInfoView.setVisibility(
                 messageTextAndOrInfoVisible ? View.VISIBLE : View.GONE);
 
-        if (shouldShowSimplifiedVisualStyle()) {
+        if (mOneOnOne || shouldShowSimplifiedVisualStyle()) {
             mContactIconView.setVisibility(View.GONE);
             mContactIconView.setImageResourceUri(null);
         } else {
@@ -951,8 +961,9 @@ public class ConversationMessageView extends FrameLayout implements View.OnClick
         }
         final Resources.Theme theme = getContext().getTheme();
         final int messageColor = getResources().getColor(messageColorResId, theme);
+        final int linkColor = getResources().getColor(R.color.google_messages_link_color, theme);
         mMessageTextView.setTextColor(messageColor);
-        mMessageTextView.setLinkTextColor(messageColor);
+        mMessageTextView.setLinkTextColor(linkColor);
         mSubjectText.setTextColor(messageColor);
         if (statusColorResId >= 0) {
             mTitleTextView.setTextColor(getResources().getColor(statusColorResId, theme));

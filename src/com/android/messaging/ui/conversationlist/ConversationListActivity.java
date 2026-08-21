@@ -48,6 +48,7 @@ public class ConversationListActivity extends AbstractConversationListActivity {
         Trace.beginSection("ConversationListActivity.onCreate");
         setTheme(R.style.BugleTheme_ConversationListActivity);
         super.onCreate(savedInstanceState);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         mConversationListFragment = ConversationListFragment.createConversationListFragment(null);
         getSupportFragmentManager()
                 .beginTransaction()
@@ -78,22 +79,14 @@ public class ConversationListActivity extends AbstractConversationListActivity {
 
     @Override
     protected void updateActionBar(final ActionBar actionBar) {
-        actionBar.setTitle(getString(R.string.app_name));
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setDisplayHomeAsUpEnabled(false);
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-        actionBar.setBackgroundDrawable(new ColorDrawable(
-                getResources().getColor(R.color.action_bar_background_color)));
-        actionBar.show();
-        super.updateActionBar(actionBar);
+        if (actionBar != null) {
+            actionBar.hide();
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Invalidate the menu as items that are based on settings may have changed
-        // while not in the app (e.g. Talkback enabled/disable affects new conversation
-        // button)
         supportInvalidateOptionsMenu();
     }
 
@@ -101,7 +94,7 @@ public class ConversationListActivity extends AbstractConversationListActivity {
     public void onBackPressed() {
         if (isInConversationListSelectMode()) {
             exitMultiSelectState();
-        } else if (collapseSearchIfExpanded()) {
+        } else if (mConversationListFragment != null && mConversationListFragment.onBackPressed()) {
             return;
         } else {
             super.onBackPressed();

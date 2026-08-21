@@ -21,10 +21,10 @@
 
     <item
         android:id="@+id/action_call"
-        android:icon="@drawable/ic_phone_small_light"
+        android:icon="@drawable/ic_call"
         android:orderInCategory="80"
         android:title="@string/action_call"
-        appcompat:showAsAction="ifRoom"/>
+        appcompat:showAsAction="always"/>
 
     <item
         android:id="@+id/action_add_contact"

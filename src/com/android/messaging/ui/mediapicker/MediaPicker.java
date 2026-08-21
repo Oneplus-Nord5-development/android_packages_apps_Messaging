@@ -468,7 +468,7 @@ public class MediaPicker extends Fragment implements DraftMessageSubscriptionDat
     }
 
     public void updateActionBar(final ActionBar actionBar) {
-        if (getActivity() == null) {
+        if (getActivity() == null || actionBar == null) {
             return;
         }
         if (isFullScreen() && mSelectedChooser != null) {

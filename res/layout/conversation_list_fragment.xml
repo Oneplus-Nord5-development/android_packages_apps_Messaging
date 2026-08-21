@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Copyright (C) 2015 The Android Open Source Project
-    Copyright (C) 2024 The LineageOS Project
+    Copyright (C) 2024-2026 The LineageOS Project
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -19,37 +19,246 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/conversation_list_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/google_messages_bg">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@android:id/list"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="@dimen/conversation_list_first_item_extra_padding"
-        android:clipToPadding="false"
-        android:listSelector="?android:attr/listSelector"
-        android:dividerHeight="0px" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <include
-        layout="@layout/list_empty_view"
-        android:id="@+id/no_conversations_view"
-        android:visibility="gone"
-        android:layout_marginBottom="@dimen/conversation_list_empty_text_bottom_margin" />
+        <!-- Google Messages Top Header Bar -->
+        <FrameLayout
+            android:id="@+id/header_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/google_messages_bg">
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay"
+            <!-- Normal State: "Messages" Title + Search & Profile Icons -->
+            <LinearLayout
+                android:id="@+id/normal_header"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:id="@+id/app_title_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/app_name"
+                    android:textColor="@color/google_messages_title_color"
+                    android:textSize="22sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:singleLine="true" />
+
+                <!-- Search Button -->
+                <ImageView
+                    android:id="@+id/search_icon_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_search_light"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_search"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- Options / Profile Button -->
+                <ImageView
+                    android:id="@+id/options_icon_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="6dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_more_vert"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_settings"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+            <!-- Search Mode Header (Revealed on Search click) -->
+            <LinearLayout
+                android:id="@+id/search_header"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="12dp"
+                android:background="@color/google_messages_bg"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/search_back_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back_light"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@android:string/cancel"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <EditText
+                    android:id="@+id/search_input_view"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@null"
+                    android:hint="@string/conversation_list_search_hint"
+                    android:textColor="@color/google_messages_title_color"
+                    android:textColorHint="@color/google_messages_text_secondary"
+                    android:textSize="16sp"
+                    android:singleLine="true"
+                    android:imeOptions="actionSearch|flagNoExtractUi"
+                    android:inputType="text" />
+
+                <ImageView
+                    android:id="@+id/search_clear_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_cancel_small_light"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@android:string/cancel"
+                    android:visibility="gone"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+            <!-- Multi-Select Contextual Header -->
+            <LinearLayout
+                android:id="@+id/selection_header"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="12dp"
+                android:background="@color/google_messages_surface_container"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/selection_close_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_cancel_small_light"
+                    android:tint="?android:attr/colorControlNormal"
+                    app:tint="?attr/colorControlNormal"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@android:string/cancel"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/selection_count_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="1"
+                    android:textColor="@color/google_messages_title_color"
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <!-- Action: Archive -->
+                <ImageView
+                    android:id="@+id/selection_archive_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_archive_small_dark"
+                    android:tint="?android:attr/colorControlNormal"
+                    app:tint="?attr/colorControlNormal"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_archive"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- Action: Delete -->
+                <ImageView
+                    android:id="@+id/selection_delete_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_delete_small_dark"
+                    android:tint="?android:attr/colorControlNormal"
+                    app:tint="?attr/colorControlNormal"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_delete"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <!-- Action: Block -->
+                <ImageView
+                    android:id="@+id/selection_block_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_dnd_on_light"
+                    android:tint="?android:attr/colorControlNormal"
+                    app:tint="?attr/colorControlNormal"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_block"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <!-- Main Conversation List -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@android:id/list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:scrollbars="none"
+                android:overScrollMode="always"
+                android:dividerHeight="0px" />
+
+            <include
+                layout="@layout/list_empty_view"
+                android:id="@+id/no_conversations_view"
+                android:visibility="gone"
+                android:layout_gravity="center"
+                android:layout_marginBottom="@dimen/conversation_list_empty_text_bottom_margin" />
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <!-- Google Messages Chat Floating Action Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/start_new_conversation_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:text="@string/start_chat"
-        android:forceDarkAllowed="false"
-        android:textColor="@color/fab_fg_color"
-        app:backgroundTint="@color/fab_color"
-        app:icon="@drawable/ic_message"
-        app:iconTint="@color/fab_fg_color"
-        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior" />
+        android:src="@drawable/ic_chat_bubble"
+        app:tint="@color/google_messages_fab_text"
+        app:backgroundTint="@color/google_messages_fab_bg"
+        app:elevation="3dp"
+        android:contentDescription="@string/start_chat" />
 
 </FrameLayout>

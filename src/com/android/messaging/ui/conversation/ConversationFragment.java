@@ -52,6 +52,9 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.android.messaging.ui.ContactIconView;
+import com.android.messaging.util.AvatarUriUtil;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -606,6 +609,26 @@ public class ConversationFragment extends Fragment implements ConversationDataLi
         // Bind the compose message view to the DraftMessageData
         mComposeMessageView.bind(DataModel.get().createDraftMessageData(
                 mBinding.getData().getConversationId()), this);
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            androidx.core.graphics.Insets statusBarInsets = insets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.statusBars()
+                            | androidx.core.view.WindowInsetsCompat.Type.displayCutout());
+            androidx.core.graphics.Insets navBarInsets = insets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.navigationBars()
+                            | androidx.core.view.WindowInsetsCompat.Type.ime());
+
+            if (mRecyclerView != null) {
+                int topPadding = statusBarInsets.top + (int) (56 * getResources().getDisplayMetrics().density);
+                mRecyclerView.setPadding(0, topPadding, 0, 0);
+            }
+
+            if (mComposeMessageView != null) {
+                mComposeMessageView.setPadding(0, 0, 0, navBarInsets.bottom);
+            }
+
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
 
         return view;
     }
@@ -1467,12 +1490,16 @@ public class ConversationFragment extends Fragment implements ConversationDataLi
     }
 
     private void updateActionAndStatusBarColor(final ActionBar actionBar) {
-        final int themeColor = ConversationDrawables.get().getConversationThemeColor();
-        actionBar.setBackgroundDrawable(new ColorDrawable(themeColor));
-        UiUtils.setStatusBarColor(getActivity(), themeColor);
+        final int darkBg = getResources().getColor(R.color.action_bar_background_color,
+                getActivity().getTheme());
+        actionBar.setBackgroundDrawable(new ColorDrawable(darkBg));
+        UiUtils.setStatusBarColor(getActivity(), android.graphics.Color.TRANSPARENT);
     }
 
     public void updateActionBar(final ActionBar actionBar) {
+        if (actionBar == null) {
+            return;
+        }
         if (mComposeMessageView == null || !mComposeMessageView.updateActionBar(actionBar)) {
             updateActionAndStatusBarColor(actionBar);
             // We update this regardless of whether or not the action bar is showing so that we
@@ -1488,6 +1515,23 @@ public class ConversationFragment extends Fragment implements ConversationDataLi
                 customView = inflator.inflate(R.layout.action_bar_conversation_name, null);
                 customView.setOnClickListener(v -> onBackPressed());
                 actionBar.setCustomView(customView);
+            }
+
+            final ContactIconView avatarView = customView.findViewById(R.id.conversation_avatar);
+            final ConversationData convData = mBinding.getData();
+            if (avatarView != null && convData != null) {
+                final ParticipantData otherParticipant = convData.getOtherParticipant();
+                if (otherParticipant != null) {
+                    final Uri avatarUri = AvatarUriUtil.createAvatarUri(otherParticipant);
+                    avatarView.setImageResourceUri(avatarUri,
+                            otherParticipant.getContactId(),
+                            otherParticipant.getLookupKey(),
+                            otherParticipant.getNormalizedDestination());
+                    avatarView.setVisibility(View.VISIBLE);
+                } else {
+                    avatarView.setImageResourceUri(null, -1, null, convData.getConversationId());
+                    avatarView.setVisibility(View.VISIBLE);
+                }
             }
 
             final TextView conversationNameView = customView.findViewById(R.id.conversation_title);
